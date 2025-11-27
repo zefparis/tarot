@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-black">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WINDSURF TAROT 2049</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;900&family=Rajdhani:wght@300;600&display=swap');
+    body { font-family: 'Rajdhani', sans-serif; }
+    .orbitron { font-family: 'Orbitron', sans-serif; }
+    .card-glow { box-shadow: 0 0 30px rgba(0, 255, 255, 0.6), 0 0 60px rgba(147, 51, 234, 0.4); }
+    .glitch { animation: glitch 0.3s linear; }
+    @keyframes glitch {
+      0%,100% { transform: translate(0); }
+      20% { transform: translate(-2px, 2px); }
+      40% { transform: translate(2px, -2px); }
+      60% { transform: translate(-2px, -2px); }
+      80% { transform: translate(2px, 2px); }
+    }
+    canvas { position: fixed; top: 0; left: 0; z-index: 0; opacity: 0.4; }
+  </style>
+</head>
+<body class="h-full text-cyan-300 overflow-hidden relative" x-data="windsurfTarot()">
+  <canvas id="space"></canvas>
+
+  <audio loop x-ref="ambient">
+    <source src="https://assets.codepen.io/605876/dark-ambient-wind.mp3" type="audio/mp3" />
+  </audio>
+
+  <div class="absolute inset-0 flex flex-col items-center justify-center z-10 p-4">
+    <div x-show="!shuffled" class="text-center">
+      <h1 class="orbitron text-6xl md:text-8xl mb-8 bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 bg-clip-text text-transparent animate-pulse">
+        WINDSURF TAROT 2049
+      </h1>
+      <p class="text-xl md:text-3xl mb-12 opacity-80" x-text="prophecy"></p>
+      <button @click="shuffle()" class="px-12 py-6 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-full text-2xl orbitron tracking-wider card-glow hover:scale-110 transition">
+        SECOUEZ OU CLIQUEZ POUR MÉLANGER L'ÉNERGIE
+      </button>
+    </div>
+
+    <div x-show="shuffled && !drawing" class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-20">
+      <button @click="draw(1)" class="px-8 py-6 bg-cyan-900/50 backdrop-blur border border-cyan-500 rounded-xl card-glow hover:scale-110 transition text-xl">1 Carte</button>
+      <button @click="draw(3)" class="px-8 py-6 bg-purple-900/50 backdrop-blur border border-purple-500 rounded-xl card-glow hover:scale-110 transition text-xl">Passé · Présent · Futur</button>
+      <button @click="draw(10)" class="px-8 py-6 bg-pink-900/50 backdrop-blur border border-pink-500 rounded-xl card-glow hover:scale-110 transition text-xl">Croix Celtique</button>
+      <button @click="yesNo()" class="px-8 py-6 bg-green-900/50 backdrop-blur border border-green-500 rounded-xl card-glow hover:scale-110 transition text-xl">Oui / Non</button>
+    </div>
+
+    <div x-show="cards.length > 0" class="mt-10 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8 max-w-7xl mx-auto">
+      <template x-for="(card, i) in cards" :key="i">
+        <div class="relative perspective-1000">
+          <div :class="card.flipped ? 'rotate-y-180' : ''" class="relative w-48 h-72 preserve-3d transition-all duration-1000 cursor-pointer" @click="card.flipped = true; card.revealed = true">
+            <div class="absolute inset-0 backface-hidden card-glow rounded-2xl overflow-hidden">
+              <img
+                :src="card.image || 'https://assets.codepen.io/605876/tarot-back-neon.jpg'"
+                @error="$event.target.src = 'https://assets.codepen.io/605876/tarot-back-neon.jpg'"
+                class="w-full h-full object-cover"
+              />
+              <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-purple-900/40"></div>
+            </div>
+
+            <div class="absolute inset-0 rotate-y-180 backface-hidden bg-black/90 rounded-2xl border-2 border-cyan-500 card-glow flex flex-col justify-between p-4">
+              <div>
+                <h3 class="orbitron text-xl text-cyan-300" x-text="card.name"></h3>
+                <p class="text-xs opacity-70" x-text="card.upright ? 'À l\'endroit' : 'Renversée'"></p>
+              </div>
+              <div class="text-sm leading-tight" x-show="card.revealed" x-transition x-text="card.meaning"></div>
+              <div class="text-xs opacity-60 mt-4" x-text="card.keywords"></div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <div
+      x-show="cards.length > 0"
+      class="mt-6 max-w-3xl mx-auto bg-black/70 border border-cyan-700/70 rounded-xl p-4 text-xs md:text-sm space-y-2"
+    >
+      <div class="flex items-center justify-between">
+        <h2 class="orbitron text-lg text-cyan-300">ESE-1 DETERMINISTIC ENCODER</h2>
+        <button
+          @click="encodeESE()"
+          class="px-3 py-1 md:px-4 md:py-2 bg-cyan-900/70 border border-cyan-500 rounded-full hover:scale-105 transition card-glow text-[0.7rem] md:text-xs"
+        >
+          Encoder ESE‑1
+        </button>
+      </div>
+      <template x-if="eseResult">
+        <div class="space-y-1 mt-1">
+          <div>
+            <span class="font-semibold">Séquence Σ :</span>
+            <span x-text="JSON.stringify(eseResult.sequence)"></span>
+          </div>
+          <div class="break-words">
+            <span class="font-semibold">Z ∈ [0,1]<sup>D</sup> :</span>
+            <span x-text="eseResult.Z.map(v => v.toFixed(3)).join(' · ')"></span>
+          </div>
+        </div>
+      </template>
+      <template x-if="!eseResult">
+        <p class="opacity-70">
+          Clique sur « Encoder ESE‑1 » pour projeter ton tirage dans un vecteur déterministe Z ∈ [0,1].
+        </p>
+      </template>
+    </div>
+
+    <div x-show="cards.length > 0" class="fixed bottom-8 left-1/2 -translate-x-1/2 flex gap-4">
+      <button @click="reset()" class="px-8 py-4 bg-red-900/70 rounded-full card-glow hover:scale-110 transition">Nouveau tirage</button>
+      <button @click="exportImage()" class="px-8 py-4 bg-green-900/70 rounded-full card-glow hover:scale-110 transition">Exporter image</button>
+    </div>
+  </div>
+
+  <script>
+  function windsurfTarot() {
+    const prophecies = [
+      "Les étoiles murmurent déjà votre nom.",
+      "Le vent cosmique porte un message.",
+      "L'univers vient de cliquer sur « refresh ».",
+      "Quelque chose d'ancien se réveille en 2049.",
+      "Vous n'êtes pas là par hasard."
+    ];
+
+    const cardImages = {};
+
+    const tarotDeck = [
+      {id:"major-00",name:"Le Fou",upright:true,meaning:"Nouveau départ radical, foi aveugle, liberté totale",keywords:"innocence · saut dans l'inconnu · potentiel infini",yesNo:"maybe"},
+      {id:"major-01",name:"Le Magicien",upright:true,meaning:"Maîtrise, manifestation, pouvoir créateur activé",keywords:"volonté · talent · alchimie",yesNo:"yes"},
+      {id:"major-02",name:"La Grande Prêtresse",upright:true,meaning:"Intuition maximale, secrets révélés, mystère féminin",keywords:"lune · subconscient · patience",yesNo:"depends"},
+      {id:"major-03",name:"L'Impératrice",upright:true,meaning:"Abondance, sensualité, création, maternité divine",keywords:"Vénus · fertilité · beauté",yesNo:"yes"},
+      {id:"major-04",name:"L'Empereur",upright:true,meaning:"Structure, autorité, stabilité, pouvoir masculin",keywords:"bélier · ordre · père",yesNo:"yes"},
+      {id:"major-05",name:"Le Hiérophante",upright:true,meaning:"Tradition, enseignement spirituel, conformité",keywords:"taureau · dogme · mentor",yesNo:"depends"},
+      {id:"major-06",name:"Les Amoureux",upright:true,meaning:"Choix d'âme, union sacrée, alignement cœur/esprit",keywords:"gémaux · amour · dilemme",yesNo:"depends"},
+      {id:"major-07",name:"Le Chariot",upright:true,meaning:"Victoire, détermination, maîtrise des opposés",keywords:"cancer · volonté · triomphe",yesNo:"yes"},
+      {id:"major-08",name:"La Force",upright:true,meaning:"Courage intérieur, compassion, domination douce",keywords:"lion · maîtrise de soi",yesNo:"yes"},
+      {id:"major-09",name:"L'Hermite",upright:true,meaning:"Recherche intérieure, solitude choisie, sagesse",keywords:"vierge · lanterne · retrait",yesNo:"depends"},
+      {id:"major-10",name:"La Roue de Fortune",upright:true,meaning:"Cycle, destin, tournant karmique",keywords:"Jupiter · chance · impermanence",yesNo:"maybe"},
+      {id:"major-11",name:"La Justice",upright:true,meaning:"Équilibre, vérité, conséquences karmiques",keywords:"balance · loi · objectivité",yesNo:"depends"},
+      {id:"major-12",name:"Le Pendu",upright:true,meaning:"Sacrifice volontaire, nouveau point de vue, lâcher-prise",keywords:"eau · suspension · initiation",yesNo:"no"},
+      {id:"major-13",name:"La Mort",upright:true,meaning:"Transformation profonde, fin d'un cycle, renaissance",keywords:"scorpion · squelette · fin",yesNo:"no"},
+      {id:"major-14",name:"Tempérance",upright:true,meaning:"Équilibre, guérison, alchimie intérieure",keywords:"sagittaire · ange · modération",yesNo:"yes"},
+      {id:"major-15",name:"Le Diable",upright:true,meaning:"Attachements, ombre, addiction, pouvoir mal utilisé",keywords:"capricorne · chaînes · désir",yesNo:"no"},
+      {id:"major-16",name:"La Tour",upright:true,meaning:"Destruction soudaine, révélation brutale, libération",keywords:"mars · foudre · chaos",yesNo:"no"},
+      {id:"major-17",name:"L'Étoile",upright:true,meaning:"Espoir, inspiration, guérison cosmique",keywords:"verseau · nude · étoiles",yesNo:"yes"},
+      {id:"major-18",name:"La Lune",upright:true,meaning:"Illusion, intuition, peur de l'inconscient",keywords:"poissons · chien · mystère",yesNo:"depends"},
+      {id:"major-19",name:"Le Soleil",upright:true,meaning:"Joie, succès, vitalité, clarté totale",keywords:"soleil · enfant · bonheur",yesNo:"yes"},
+      {id:"major-20",name:"Le Jugement",upright:true,meaning:"Appel, renaissance, absolution",keywords:"Pluton · trompette · résurrection",yesNo:"yes"},
+      {id:"major-21",name:"Le Monde",upright:true,meaning:"Achèvement, intégration, voyage terminé",keywords:"saturne · danse · couronne",yesNo:"yes"},
+      {id:"wands-ace",name:"As de Bâtons",upright:true,meaning:"Nouvelle passion, étincelle créative, énergie sexuelle",keywords:"feu · potentiel · inspiration",yesNo:"yes"},
+      {id:"cups-ace",name:"As de Coupes",upright:true,meaning:"Nouvel amour, ouverture du cœur, compassion",keywords:"eau · émotion · don",yesNo:"yes"}
+    ].map((c, i) => ({ ...c, index: i, image: cardImages[c.id] || null }));
+
+    function buildESEProfile() {
+      const K_max = 10;
+      const D_raw = 16;
+      const D = 8;
+
+      const M = [];
+      for (let d = 0; d < D; d++) {
+        const row = [];
+        for (let j = 0; j < D_raw; j++) {
+          row.push((((d + 1) * (j + 3)) % 11) / 10);
+        }
+        M.push(row);
+      }
+
+      const b = Array(D).fill(0.1);
+      const alpha = Array(D).fill(1);
+      const beta = Array(D).fill(0);
+
+      const symbols = tarotDeck.map(c => c.id.toUpperCase().replace(/[^A-Z0-9_]/g, '_'));
+      const uniqueSymbols = Array.from(new Set(symbols));
+
+      return {
+        profile_id: 'ESE-1/v1.0',
+        alphabet: { symbols: uniqueSymbols, size: uniqueSymbols.length },
+        grammar: { grammar_id: 'tarot.spread.v1', rules: [] },
+        parameters: { K_max, dimensions: { D_raw, D } },
+        matrices: { M, b, alpha, beta },
+        input: { sequence: [] },
+        output: { Z: [] }
+      };
+    }
+
+    function encodeSequence(profile, sequence) {
+      const seq = sequence.slice(0, profile.parameters.K_max);
+      const { D_raw, D } = profile.parameters.dimensions;
+
+      if (seq.length === 0) {
+        return { sequence: [], Z: new Array(D).fill(0.5) };
+      }
+
+      const raw = new Array(D_raw).fill(0);
+
+      seq.forEach((sym, k) => {
+        const s = String(sym);
+        let acc = 0;
+        for (let i = 0; i < s.length; i++) {
+          acc = (acc * 31 + s.charCodeAt(i) + k) >>> 0;
+        }
+        for (let j = 0; j < D_raw; j++) {
+          const val = ((acc + j * 1315423911) >>> 0) % 9973;
+          raw[j] += val / 9973;
+        }
+      });
+
+      for (let j = 0; j < D_raw; j++) {
+        const t = Math.tanh(raw[j] / seq.length);
+        raw[j] = (t + 1) / 2;
+      }
+
+      const { M, b, alpha, beta } = profile.matrices;
+      const Z = new Array(D).fill(0);
+
+      for (let d = 0; d < D; d++) {
+        const row = M[d] || [];
+        let y = (b && b[d]) != null ? b[d] : 0;
+        for (let j = 0; j < D_raw; j++) {
+          y += (row[j] || 0) * raw[j];
+        }
+        const a = (alpha && alpha[d]) != null ? alpha[d] : 1;
+        const c = (beta && beta[d]) != null ? beta[d] : 0;
+        const t = a * (y - c);
+        const sig = 1 / (1 + Math.exp(-t));
+        Z[d] = sig;
+      }
+
+      return { sequence: seq, Z };
+    }
+
+    const eseProfile = buildESEProfile();
+
+    return {
+      prophecy: prophecies[Math.floor(Math.random() * prophecies.length)],
+      shuffled: false,
+      drawing: false,
+      cards: [],
+      eseResult: null,
+
+      init() {
+        this.createStars();
+        this.$watch('cards', () => this.checkSynchronicity());
+        setTimeout(() => this.$refs.ambient.play().catch(() => {}), 3000);
+      },
+
+      createStars() {
+        const canvas = document.getElementById('space');
+        const ctx = canvas.getContext('2d');
+        const resize = () => {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        };
+        resize();
+        window.addEventListener('resize', resize);
+        const stars = [];
+        for (let i = 0; i < 300; i++) {
+          stars.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 2,
+            speed: Math.random() * 0.5 + 0.1
+          });
+        }
+        const animate = () => {
+          ctx.fillStyle = 'rgba(0,0,0,0.05)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = '#00ffff';
+          stars.forEach(s => {
+            s.y += s.speed;
+            if (s.y > canvas.height) s.y = 0;
+            ctx.fillRect(s.x, s.y, s.size, s.size * 4);
+          });
+          requestAnimationFrame(animate);
+        };
+        animate();
+      },
+
+      shuffle() {
+        this.shuffled = true;
+        document.body.classList.add('glitch');
+        setTimeout(() => document.body.classList.remove('glitch'), 600);
+        if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
+      },
+
+      draw(count) {
+        this.drawing = true;
+        this.cards = [];
+        const deck = [...tarotDeck];
+        for (let i = 0; i < count; i++) {
+          setTimeout(() => {
+            const idx = Math.floor(Math.random() * deck.length);
+            const card = deck.splice(idx, 1)[0];
+            card.upright = Math.random() > 0.3;
+            card.flipped = false;
+            card.revealed = false;
+            card.meaning = card.upright
+              ? card.meaning
+              : 'Renversée : blocage, intériorisation ou exagération de ' + card.meaning.split(',')[0].toLowerCase();
+            this.cards.push({ ...card });
+          }, i * 400);
+        }
+        setTimeout(() => (this.drawing = false), count * 500);
+      },
+
+      encodeESE() {
+        const sequence = this.cards.map(c => c.id.toUpperCase().replace(/[^A-Z0-9_]/g, '_'));
+        this.eseResult = encodeSequence(eseProfile, sequence);
+      },
+
+      yesNo() {
+        const card = { ...tarotDeck[Math.floor(Math.random() * tarotDeck.length)] };
+        card.upright = Math.random() > 0.3;
+        const prob = card.yesNo === 'yes' ? 90 : card.yesNo === 'no' ? 10 : card.yesNo === 'maybe' ? 50 : 65;
+        alert(
+          `La réponse de l'Univers :\n\n${card.name} (${card.upright ? "à l'endroit" : 'renversée'})\n\nProbabilité : ${prob}% ${String(
+            card.yesNo
+          ).toUpperCase()}`
+        );
+      },
+
+      checkSynchronicity() {
+        const counts = {};
+        this.cards.forEach(c => (counts[c.id] = (counts[c.id] || 0) + 1));
+        Object.keys(counts).forEach(id => {
+          if (counts[id] >= 3) {
+            const card = this.cards.find(c => c.id === id);
+            if (card) {
+              alert(
+                `⚡ SYNCHRONICITÉ DÉTECTÉE ⚡\nLa carte "${card.name}" est sortie ${counts[id]} fois.\nL'Univers insiste.`
+              );
+            }
+          }
+        });
+      },
+
+      exportImage() {
+        html2canvas(document.body).then(canvas => {
+          const link = document.createElement('a');
+          link.download = 'windsurf-tarot-2049.png';
+          link.href = canvas.toDataURL();
+          link.click();
+        });
+      },
+
+      reset() {
+        this.cards = [];
+        this.shuffled = false;
+      }
+    };
+  }
+  </script>
+
+  <style>
+    .preserve-3d { transform-style: preserve-3d; }
+    .perspective-1000 { perspective: 1000px; }
+    .backface-hidden { backface-visibility: hidden; }
+    .rotate-y-180 { transform: rotateY(180deg); }
+  </style>
+</body>
+</html>

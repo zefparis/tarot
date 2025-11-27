@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ESE-1 Deterministic Esoteric Symbolic Encoder",
+  "description": "Deterministic symbolic-to-numeric encoder profile",
+  "type": "object",
+  "properties": {
+    "profile_id": {
+      "type": "string",
+      "const": "ESE-1/v1.0",
+      "description": "Versioned identifier of the ESE-1 deterministic profile"
+    },
+    "alphabet": {
+      "type": "object",
+      "description": "Finite symbol alphabet Σ",
+      "properties": {
+        "symbols": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": ["symbols", "size"],
+      "additionalProperties": false
+    },
+    "grammar": {
+      "type": "object",
+      "description": "Context-free grammar G",
+      "properties": {
+        "grammar_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]+$"
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "lhs": { "type": "string" },
+              "rhs": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            },
+            "required": ["lhs", "rhs"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["grammar_id", "rules"],
+      "additionalProperties": false
+    },
+    "parameters": {
+      "type": "object",
+      "description": "Deterministic profile parameters",
+      "properties": {
+        "K_max": { "type": "integer", "minimum": 1 },
+        "dimensions": {
+          "type": "object",
+          "properties": {
+            "D_raw": { "type": "integer", "minimum": 1 },
+            "D": { "type": "integer", "minimum": 1 }
+          },
+          "required": ["D_raw", "D"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["K_max", "dimensions"],
+      "additionalProperties": false
+    },
+    "matrices": {
+      "type": "object",
+      "description": "Linear projection matrices (static, versioned)",
+      "properties": {
+        "M": {
+          "type": "array",
+          "description": "Matrix M[D][D_raw]",
+          "items": {
+            "type": "array",
+            "items": { "type": "number" }
+          }
+        },
+        "b": {
+          "type": "array",
+          "description": "Bias vector b[D]",
+          "items": { "type": "number" }
+        },
+        "alpha": {
+          "type": "array",
+          "description": "Normalization α[D]",
+          "items": { "type": "number" }
+        },
+        "beta": {
+          "type": "array",
+          "description": "Normalization β[D]",
+          "items": { "type": "number" }
+        }
+      },
+      "required": ["M", "b", "alpha", "beta"],
+      "additionalProperties": false
+    },
+    "input": {
+      "type": "object",
+      "description": "Validated symbolic input sequence",
+      "properties": {
+        "sequence": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["sequence"],
+      "additionalProperties": false
+    },
+    "output": {
+      "type": "object",
+      "description": "Resulting normalized vector Z ∈ [0,1]",
+      "properties": {
+        "Z": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      },
+      "required": ["Z"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "profile_id",
+    "alphabet",
+    "grammar",
+    "parameters",
+    "matrices",
+    "input",
+    "output"
+  ],
+  "additionalProperties": false
+}
