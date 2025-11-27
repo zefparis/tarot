@@ -106,6 +106,43 @@
       </template>
     </div>
 
+    <div
+      x-show="interpretation && (interpretation.spread || interpretation.ese)"
+      class="mt-4 max-w-3xl mx-auto bg-black/80 border border-purple-700/60 rounded-xl p-4 text-[0.7rem] md:text-sm space-y-3"
+    >
+      <h2 class="orbitron text-lg text-purple-300">INTERPRÉTATION ORACLE 2049</h2>
+
+      <template x-if="interpretation.spread">
+        <div class="space-y-1">
+          <h3 class="font-semibold text-cyan-300" x-text="interpretation.spread.title"></h3>
+          <ul class="list-disc list-inside space-y-1">
+            <template x-for="(pos, idx) in interpretation.spread.positions" :key="idx">
+              <li>
+                <span class="font-semibold" x-text="pos.label + ' · ' + pos.cardName + ' (' + pos.orientation + ')' "></span>
+                <span class="block" x-text="pos.text"></span>
+              </li>
+            </template>
+          </ul>
+          <p class="mt-2 opacity-80" x-text="interpretation.spread.synthesis"></p>
+        </div>
+      </template>
+
+      <template x-if="interpretation.ese">
+        <div class="space-y-1 border-t border-purple-800/60 pt-3">
+          <h3 class="font-semibold text-pink-300" x-text="interpretation.ese.profileName"></h3>
+          <p x-text="interpretation.ese.summary"></p>
+          <ul class="mt-1 grid grid-cols-1 md:grid-cols-2 gap-1">
+            <template x-for="(axis, idx) in interpretation.ese.axes" :key="'axis-' + idx">
+              <li class="flex justify-between gap-2">
+                <span x-text="axis.name"></span>
+                <span class="opacity-80" x-text="axis.description"></span>
+              </li>
+            </template>
+          </ul>
+        </div>
+      </template>
+    </div>
+
     <div x-show="cards.length > 0" class="fixed bottom-8 left-1/2 -translate-x-1/2 flex gap-4">
       <button @click="reset()" class="px-8 py-4 bg-red-900/70 rounded-full card-glow hover:scale-110 transition">Nouveau tirage</button>
       <button @click="exportImage()" class="px-8 py-4 bg-green-900/70 rounded-full card-glow hover:scale-110 transition">Exporter image</button>
@@ -236,6 +273,8 @@
       shuffled: false,
       drawing: false,
       cards: [],
+      currentSpread: null,
+      interpretation: null,
       eseResult: null,
 
       init() {
@@ -286,6 +325,9 @@
       draw(count) {
         this.drawing = true;
         this.cards = [];
+        this.eseResult = null;
+        this.interpretation = null;
+        this.currentSpread = this.buildSpreadDefinition(count);
         const deck = [...tarotDeck];
         for (let i = 0; i < count; i++) {
           setTimeout(() => {
@@ -300,12 +342,193 @@
             this.cards.push({ ...card });
           }, i * 400);
         }
-        setTimeout(() => (this.drawing = false), count * 500);
+        setTimeout(() => {
+          this.drawing = false;
+          this.buildSpreadInterpretation();
+        }, count * 500);
+      },
+
+      buildSpreadDefinition(count) {
+        if (count === 1) {
+          return {
+            type: 'one',
+            title: 'Message central',
+            positions: [
+              { index: 0, label: 'Message central', role: 'core' }
+            ]
+          };
+        }
+        if (count === 3) {
+          return {
+            type: 'three',
+            title: 'Passé · Présent · Futur',
+            positions: [
+              { index: 0, label: 'Passé', role: 'past' },
+              { index: 1, label: 'Présent', role: 'present' },
+              { index: 2, label: 'Futur', role: 'future' }
+            ]
+          };
+        }
+        if (count === 10) {
+          return {
+            type: 'celtic',
+            title: 'Croix celtique',
+            positions: [
+              { index: 0, label: 'Situation actuelle', role: 'situation' },
+              { index: 1, label: 'Défi / croix', role: 'challenge' },
+              { index: 2, label: 'Racines inconscientes', role: 'subconscious' },
+              { index: 3, label: 'Passé récent', role: 'past' },
+              { index: 4, label: 'Potentiel / conscience', role: 'conscious' },
+              { index: 5, label: 'Avenir proche', role: 'near_future' },
+              { index: 6, label: 'Toi / attitude', role: 'self' },
+              { index: 7, label: 'Environnement', role: 'environment' },
+              { index: 8, label: 'Espoirs et craintes', role: 'hopes_fears' },
+              { index: 9, label: 'Synthèse / résultat probable', role: 'outcome' }
+            ]
+          };
+        }
+        return {
+          type: 'free',
+          title: 'Configuration libre',
+          positions: Array.from({ length: this.cards.length || count }).map((_, i) => ({
+            index: i,
+            label: `Carte ${i + 1}`,
+            role: 'generic'
+          }))
+        };
+      },
+
+      buildSpreadInterpretation() {
+        if (!this.cards || this.cards.length === 0) return;
+        const baseSpread = this.currentSpread || this.buildSpreadDefinition(this.cards.length);
+        const positions = (baseSpread.positions || [])
+          .filter(p => p.index < this.cards.length)
+          .map(p => {
+            const card = this.cards[p.index];
+            const orientation = card.upright ? "à l'endroit" : 'renversée';
+            const rawMeaning = card.meaning.replace(/^Renversée\s*:?\s*/i, '');
+            const lowered = rawMeaning.charAt(0).toLowerCase() + rawMeaning.slice(1);
+            const description = card.upright
+              ? `À cette position, ${card.name} ${orientation} met en lumière ${lowered}.`
+              : `À cette position, ${card.name} ${orientation} pointe un blocage, une intériorisation ou une tension autour de ${lowered}.`;
+            return {
+              label: p.label,
+              cardName: card.name,
+              orientation,
+              text: description
+            };
+          });
+
+        const synthesis = this.buildSpreadSynthesis(baseSpread);
+        if (!this.interpretation) this.interpretation = {};
+        this.interpretation.spread = {
+          title: baseSpread.title,
+          type: baseSpread.type,
+          positions,
+          synthesis
+        };
+      },
+
+      buildSpreadSynthesis(spread) {
+        const total = this.cards.length;
+        if (!total) return '';
+        const reversedCount = this.cards.filter(c => !c.upright).length;
+        const majorCount = this.cards.filter(c => String(c.id || '').startsWith('major-')).length;
+        const parts = [];
+
+        if (majorCount / total >= 0.5) {
+          parts.push("La dominante d'Arcanes majeurs indique une période charnière où l'univers insiste sur des enjeux de long terme.");
+        } else {
+          parts.push("La présence majoritaire d'Arcanes mineurs souligne des ajustements concrets dans le quotidien plutôt qu'un tournant karmique massif.");
+        }
+
+        if (reversedCount === 0) {
+          parts.push("Les cartes apparaissent toutes à l'endroit : l'énergie circule de façon fluide, les portes sont ouvertes si tu avances avec conscience.");
+        } else if (reversedCount / total >= 0.5) {
+          parts.push("La proportion importante de cartes renversées parle de résistances intérieures, de doutes ou de conditionnements à transmuter avant le prochain pas.");
+        } else {
+          parts.push("Quelques cartes renversées introduisent des zones de tension ou de ralentissement, mais l'ensemble reste équilibré et évolutif.");
+        }
+
+        if (spread && spread.type === 'three') {
+          parts.push("Ce tirage passé-présent-futur met surtout l'accent sur la trajectoire plutôt que sur un résultat figé : chaque choix dans le présent recode la suite.");
+        } else if (spread && spread.type === 'celtic') {
+          parts.push("La croix celtique cartographie finement le contexte, les forces visibles et invisibles, ainsi que le potentiel d'évolution de ta situation.");
+        } else if (spread && spread.type === 'one') {
+          parts.push("Une seule carte agit ici comme un condensé d'information : un message focal, à méditer plutôt qu'à consommer rapidement.");
+        }
+
+        return parts.join(' ');
       },
 
       encodeESE() {
         const sequence = this.cards.map(c => c.id.toUpperCase().replace(/[^A-Z0-9_]/g, '_'));
         this.eseResult = encodeSequence(eseProfile, sequence);
+        this.buildESEInterpretation();
+      },
+
+      buildESEInterpretation() {
+        if (!this.eseResult || !this.eseResult.Z || !this.eseResult.Z.length) return;
+        const Z = this.eseResult.Z;
+        const axesConfig = [
+          { index: 0, name: 'Ouverture au changement' },
+          { index: 1, name: 'Ancrage et stabilité' },
+          { index: 2, name: 'Intensité émotionnelle' },
+          { index: 3, name: 'Clarté mentale' },
+          { index: 4, name: 'Énergie créative' },
+          { index: 5, name: 'Capacité de décision' },
+          { index: 6, name: 'Connexion spirituelle' },
+          { index: 7, name: 'Intégration globale' }
+        ];
+
+        const axes = axesConfig.map(axis => {
+          const value = Z[axis.index] != null ? Z[axis.index] : 0.5;
+          let quality;
+          if (value < 0.33) {
+            quality = 'plutôt en retrait';
+          } else if (value < 0.66) {
+            quality = 'présente et équilibrée';
+          } else {
+            quality = 'très activée';
+          }
+          return {
+            name: axis.name,
+            value,
+            description: `${quality} (${value.toFixed(2)})`
+          };
+        });
+
+        const o = Z[0] || 0.5;
+        const s = Z[1] || 0.5;
+        const c = Z[4] || 0.5;
+        const spirit = Z[6] || 0.5;
+
+        let profileName;
+        if (o > 0.6 && c > 0.6) {
+          profileName = 'Profil Explorateur·rice quantique';
+        } else if (s > 0.6 && Z[3] > 0.6) {
+          profileName = 'Profil Architecte du réel';
+        } else if (spirit > 0.6) {
+          profileName = 'Profil Alchimiste intérieur';
+        } else {
+          profileName = 'Profil Navigateur·rice des possibles';
+        }
+
+        let summary;
+        if (o > s + 0.15) {
+          summary = "Le vecteur ESE‑1 met en avant une dynamique d'ouverture, d'essais et de bifurcations possibles. L'univers t'invite à explorer plutôt qu'à figer les choses trop vite.";
+        } else if (s > o + 0.15) {
+          summary = "Le profil pointe une recherche de stabilité, de cadre et de consolidation. Il s'agit moins de tout changer que d'habiter pleinement ce qui est déjà là, en l'ajustant avec lucidité.";
+        } else {
+          summary = "Ouverture et stabilité sont en dialogue : tu peux envisager des ajustements progressifs, en gardant un socle fiable tout en laissant la marge nécessaire aux synchronicités.";
+        }
+
+        if (!this.interpretation) this.interpretation = {};
+        this.interpretation.ese = {
+          profileName,
+          axes,
+          summary
+        };
       },
 
       yesNo() {
@@ -346,6 +569,9 @@
       reset() {
         this.cards = [];
         this.shuffled = false;
+        this.eseResult = null;
+        this.interpretation = null;
+        this.currentSpread = null;
       }
     };
   }
