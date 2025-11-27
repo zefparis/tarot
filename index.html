@@ -407,10 +407,13 @@
             const card = this.cards[p.index];
             const orientation = card.upright ? "à l'endroit" : 'renversée';
             const rawMeaning = card.meaning.replace(/^Renversée\s*:?\s*/i, '');
-            const lowered = rawMeaning.charAt(0).toLowerCase() + rawMeaning.slice(1);
-            const description = card.upright
-              ? `À cette position, ${card.name} ${orientation} met en lumière ${lowered}.`
-              : `À cette position, ${card.name} ${orientation} pointe un blocage, une intériorisation ou une tension autour de ${lowered}.`;
+            const simpleMeaning = rawMeaning.split(',')[0] || rawMeaning;
+            let description;
+            if (card.upright) {
+              description = `${card.name} ${orientation} met surtout en avant : ${simpleMeaning.toLowerCase()}.`;
+            } else {
+              description = `${card.name} ${orientation} peut montrer des blocages ou des difficultés avec : ${simpleMeaning.toLowerCase()}.`;
+            }
             return {
               label: p.label,
               cardName: card.name,
@@ -437,25 +440,25 @@
         const parts = [];
 
         if (majorCount / total >= 0.5) {
-          parts.push("La dominante d'Arcanes majeurs indique une période charnière où l'univers insiste sur des enjeux de long terme.");
+          parts.push("Il y a beaucoup de grandes cartes (Arcanes majeurs) : tu traverses sans doute une période importante, avec des choix forts ou des prises de conscience.");
         } else {
-          parts.push("La présence majoritaire d'Arcanes mineurs souligne des ajustements concrets dans le quotidien plutôt qu'un tournant karmique massif.");
+          parts.push("On voit surtout des cartes du quotidien (Arcanes mineurs) : le tirage parle plutôt de ta vie de tous les jours et de choses concrètes.");
         }
 
         if (reversedCount === 0) {
-          parts.push("Les cartes apparaissent toutes à l'endroit : l'énergie circule de façon fluide, les portes sont ouvertes si tu avances avec conscience.");
+          parts.push("Aucune carte renversée : la situation semble assez fluide, les choses peuvent avancer simplement si tu restes à l'écoute de ce que tu ressens.");
         } else if (reversedCount / total >= 0.5) {
-          parts.push("La proportion importante de cartes renversées parle de résistances intérieures, de doutes ou de conditionnements à transmuter avant le prochain pas.");
+          parts.push("Beaucoup de cartes renversées : il peut y avoir des blocages, des peurs ou des habitudes qui freinent un peu les choses pour le moment.");
         } else {
-          parts.push("Quelques cartes renversées introduisent des zones de tension ou de ralentissement, mais l'ensemble reste équilibré et évolutif.");
+          parts.push("Quelques cartes renversées : certains points demandent des ajustements, mais l'ensemble du tirage reste plutôt équilibré.");
         }
 
         if (spread && spread.type === 'three') {
-          parts.push("Ce tirage passé-présent-futur met surtout l'accent sur la trajectoire plutôt que sur un résultat figé : chaque choix dans le présent recode la suite.");
+          parts.push("Ce tirage passé-présent-futur montre comment ce que tu as vécu récemment influence ce que tu vis maintenant, et vers où cela peut t'emmener.");
         } else if (spread && spread.type === 'celtic') {
-          parts.push("La croix celtique cartographie finement le contexte, les forces visibles et invisibles, ainsi que le potentiel d'évolution de ta situation.");
+          parts.push("La croix celtique donne une vue d'ensemble : ce qui se passe, ce qui t'aide, ce qui bloque, et le chemin possible devant toi.");
         } else if (spread && spread.type === 'one') {
-          parts.push("Une seule carte agit ici comme un condensé d'information : un message focal, à méditer plutôt qu'à consommer rapidement.");
+          parts.push("Une seule carte donne ici un message simple et direct, à garder en tête dans les jours qui viennent.");
         }
 
         return parts.join(' ');
@@ -485,16 +488,16 @@
           const value = Z[axis.index] != null ? Z[axis.index] : 0.5;
           let quality;
           if (value < 0.33) {
-            quality = 'plutôt en retrait';
+            quality = 'niveau bas';
           } else if (value < 0.66) {
-            quality = 'présente et équilibrée';
+            quality = 'niveau moyen';
           } else {
-            quality = 'très activée';
+            quality = 'niveau élevé';
           }
           return {
             name: axis.name,
             value,
-            description: `${quality} (${value.toFixed(2)})`
+            description: `${quality} (~${Math.round(value * 100)}%)`
           };
         });
 
@@ -516,11 +519,11 @@
 
         let summary;
         if (o > s + 0.15) {
-          summary = "Le vecteur ESE‑1 met en avant une dynamique d'ouverture, d'essais et de bifurcations possibles. L'univers t'invite à explorer plutôt qu'à figer les choses trop vite.";
+          summary = "Tu es dans une période d'ouverture et d'essais. C'est un bon moment pour tester de nouvelles pistes et voir ce qui te convient, sans tout verrouiller trop vite.";
         } else if (s > o + 0.15) {
-          summary = "Le profil pointe une recherche de stabilité, de cadre et de consolidation. Il s'agit moins de tout changer que d'habiter pleinement ce qui est déjà là, en l'ajustant avec lucidité.";
+          summary = "En ce moment, le besoin de stabilité est fort. L'important est de sécuriser ce qui compte pour toi et de faire évoluer les choses tranquillement, étape par étape.";
         } else {
-          summary = "Ouverture et stabilité sont en dialogue : tu peux envisager des ajustements progressifs, en gardant un socle fiable tout en laissant la marge nécessaire aux synchronicités.";
+          summary = "Tu peux avancer en cherchant un équilibre : garder ce qui te rassure tout en laissant une place à quelques changements et nouveautés.";
         }
 
         if (!this.interpretation) this.interpretation = {};
