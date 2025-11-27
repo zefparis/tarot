@@ -22,17 +22,17 @@
     }
     canvas { position: fixed; top: 0; left: 0; z-index: 0; opacity: 0.4; }
   </style>
-</head>
-<body class="h-full text-cyan-300 overflow-hidden relative" x-data="windsurfTarot()">
+ </head>
+ <body class="min-h-screen text-cyan-300 bg-black overflow-x-hidden overflow-y-auto relative" x-data="windsurfTarot()">
   <canvas id="space"></canvas>
 
   <audio loop x-ref="ambient">
     <source src="https://assets.codepen.io/605876/dark-ambient-wind.mp3" type="audio/mp3" />
   </audio>
 
-  <div class="absolute inset-0 flex flex-col items-center justify-center z-10 p-4">
+  <div class="relative min-h-screen flex flex-col items-center justify-start md:justify-center z-10 p-4">
     <div x-show="!shuffled" class="text-center">
-      <h1 class="orbitron text-6xl md:text-8xl mb-8 bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 bg-clip-text text-transparent animate-pulse">
+      <h1 class="orbitron text-4xl sm:text-5xl md:text-7xl lg:text-8xl mb-8 bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 bg-clip-text text-transparent animate-pulse">
         WINDSURF TAROT 2049
       </h1>
       <p class="text-xl md:text-3xl mb-12 opacity-80" x-text="prophecy"></p>
@@ -41,17 +41,17 @@
       </button>
     </div>
 
-    <div x-show="shuffled && !drawing" class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-20">
-      <button @click="draw(1)" class="px-8 py-6 bg-cyan-900/50 backdrop-blur border border-cyan-500 rounded-xl card-glow hover:scale-110 transition text-xl">1 Carte</button>
-      <button @click="draw(3)" class="px-8 py-6 bg-purple-900/50 backdrop-blur border border-purple-500 rounded-xl card-glow hover:scale-110 transition text-xl">Passé · Présent · Futur</button>
-      <button @click="draw(10)" class="px-8 py-6 bg-pink-900/50 backdrop-blur border border-pink-500 rounded-xl card-glow hover:scale-110 transition text-xl">Croix Celtique</button>
-      <button @click="yesNo()" class="px-8 py-6 bg-green-900/50 backdrop-blur border border-green-500 rounded-xl card-glow hover:scale-110 transition text-xl">Oui / Non</button>
+    <div x-show="shuffled && !drawing" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mt-10 md:mt-20">
+      <button @click="draw(1)" class="px-6 sm:px-8 py-4 sm:py-6 bg-cyan-900/50 backdrop-blur border border-cyan-500 rounded-xl card-glow hover:scale-110 transition text-base sm:text-lg md:text-xl">1 Carte</button>
+      <button @click="draw(3)" class="px-6 sm:px-8 py-4 sm:py-6 bg-purple-900/50 backdrop-blur border border-purple-500 rounded-xl card-glow hover:scale-110 transition text-base sm:text-lg md:text-xl">Passé · Présent · Futur</button>
+      <button @click="draw(10)" class="px-6 sm:px-8 py-4 sm:py-6 bg-pink-900/50 backdrop-blur border border-pink-500 rounded-xl card-glow hover:scale-110 transition text-base sm:text-lg md:text-xl">Croix Celtique</button>
+      <button @click="yesNo()" class="px-6 sm:px-8 py-4 sm:py-6 bg-green-900/50 backdrop-blur border border-green-500 rounded-xl card-glow hover:scale-110 transition text-base sm:text-lg md:text-xl">Oui / Non</button>
     </div>
 
-    <div x-show="cards.length > 0" class="mt-10 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8 max-w-7xl mx-auto">
+    <div x-show="cards.length > 0" class="mt-8 sm:mt-10 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8 max-w-7xl mx-auto px-2 sm:px-4">
       <template x-for="(card, i) in cards" :key="i">
         <div class="relative perspective-1000">
-          <div :class="card.flipped ? 'rotate-y-180' : ''" class="relative w-48 h-72 preserve-3d transition-all duration-1000 cursor-pointer" @click="card.flipped = true; card.revealed = true">
+          <div :class="card.flipped ? 'rotate-y-180' : ''" class="relative w-40 h-64 sm:w-48 sm:h-72 preserve-3d transition-all duration-1000 cursor-pointer" @click="card.flipped = true; card.revealed = true">
             <div class="absolute inset-0 backface-hidden card-glow rounded-2xl overflow-hidden">
               <img
                 :src="card.image || 'https://assets.codepen.io/605876/tarot-back-neon.jpg'"
@@ -143,9 +143,9 @@
       </template>
     </div>
 
-    <div x-show="cards.length > 0" class="fixed bottom-8 left-1/2 -translate-x-1/2 flex gap-4">
-      <button @click="reset()" class="px-8 py-4 bg-red-900/70 rounded-full card-glow hover:scale-110 transition">Nouveau tirage</button>
-      <button @click="exportImage()" class="px-8 py-4 bg-green-900/70 rounded-full card-glow hover:scale-110 transition">Exporter image</button>
+    <div x-show="cards.length > 0" class="mt-8 mb-6 flex gap-3 justify-center md:mt-0 md:mb-0 md:fixed md:bottom-8 md:left-1/2 md:-translate-x-1/2">
+      <button @click="reset()" class="px-6 sm:px-8 py-3 sm:py-4 bg-red-900/70 rounded-full card-glow hover:scale-110 transition text-sm sm:text-base">Nouveau tirage</button>
+      <button @click="exportImage()" class="px-6 sm:px-8 py-3 sm:py-4 bg-green-900/70 rounded-full card-glow hover:scale-110 transition text-sm sm:text-base">Exporter image</button>
     </div>
   </div>
 
